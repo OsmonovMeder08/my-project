@@ -69,7 +69,7 @@ export default function Home() {
             userSelect: "none",
           }}
         >
-          &copy; 2008-2025 Meda Islamic App. Messi better than Ronaldo.
+          &copy; 2008-2025 Meda Islamic App.
         </footer>
       </div>
     );

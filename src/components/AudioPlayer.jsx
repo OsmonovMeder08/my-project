@@ -7,15 +7,21 @@ export default function AudioPlayer({ src }) {
   const [duration, setDuration] = useState(0);
 
   useEffect(() => {
-    if (!audioRef.current) return;
+    const audio = audioRef.current;
+    if (!audio) return;
 
-    audioRef.current.pause();
-    audioRef.current.load();
+    // Сброс состояния при смене src
+    audio.pause();
+    audio.load();
     setPlaying(false);
     setProgress(0);
 
     const onLoadedMetadata = () => {
-      setDuration(audioRef.current.duration);
+      setDuration(audio.duration);
+    };
+
+    const onTimeUpdate = () => {
+      setProgress(audio.currentTime);
     };
 
     const onEnded = () => {
@@ -23,13 +29,14 @@ export default function AudioPlayer({ src }) {
       setProgress(0);
     };
 
-    const audioElement = audioRef.current;
-    audioElement.addEventListener("loadedmetadata", onLoadedMetadata);
-    audioElement.addEventListener("ended", onEnded);
+    audio.addEventListener("loadedmetadata", onLoadedMetadata);
+    audio.addEventListener("timeupdate", onTimeUpdate);
+    audio.addEventListener("ended", onEnded);
 
     return () => {
-      audioElement.removeEventListener("loadedmetadata", onLoadedMetadata);
-      audioElement.removeEventListener("ended", onEnded);
+      audio.removeEventListener("loadedmetadata", onLoadedMetadata);
+      audio.removeEventListener("timeupdate", onTimeUpdate);
+      audio.removeEventListener("ended", onEnded);
     };
   }, [src]);
 
@@ -44,18 +51,6 @@ export default function AudioPlayer({ src }) {
     }
   };
 
-  const onTimeUpdate = () => {
-    if (!audioRef.current) return;
-    setProgress(audioRef.current.currentTime);
-  };
-
-  const formatTime = (time) => {
-    if (!time || isNaN(time)) return "0:00";
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
-  };
-
   const onSeek = (e) => {
     if (!audioRef.current) return;
     const time = Number(e.target.value);
@@ -63,27 +58,45 @@ export default function AudioPlayer({ src }) {
     setProgress(time);
   };
 
+  const formatTime = (seconds) => {
+    if (isNaN(seconds)) return "0:00";
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s < 10 ? "0" : ""}${s}`;
+  };
+
   return (
-    <div className="flex items-center space-x-4 text-white max-w-4xl mx-auto">
+    <div style={{ maxWidth: 600, margin: "20px auto", color: "#fff", background: "#222", padding: 20, borderRadius: 8 }}>
       <button
         onClick={togglePlay}
-        className="px-6 py-2 bg-pink-600 hover:bg-pink-500 rounded-full font-semibold shadow-lg transition duration-300"
-        aria-label={playing ? "Pause" : "Play"}
+        style={{
+          padding: "10px 20px",
+          backgroundColor: "#1db954",
+          border: "none",
+          borderRadius: 5,
+          color: "white",
+          cursor: "pointer",
+          marginBottom: 15,
+        }}
       >
-        {playing ? "⏸️ Pause" : "▶️ Play"}
+        {playing ? "⏸ Pause" : "▶️ Play"}
       </button>
+
       <input
         type="range"
-        min="0"
+        min={0}
         max={duration}
         value={progress}
         onChange={onSeek}
-        className="flex-grow h-2 rounded-lg cursor-pointer accent-pink-500"
+        style={{ width: "100%" }}
       />
-      <div className="w-24 text-right font-mono text-lg select-none">
-        {formatTime(progress)} / {formatTime(duration)}
+
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginTop: 5 }}>
+        <span>{formatTime(progress)}</span>
+        <span>{formatTime(duration)}</span>
       </div>
-      <audio ref={audioRef} onTimeUpdate={onTimeUpdate}>
+
+      <audio ref={audioRef}>
         <source src={src} type="audio/mpeg" />
         Your browser does not support the audio element.
       </audio>

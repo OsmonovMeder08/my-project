@@ -35,7 +35,6 @@ export default function App() {
               <Route path="/Hadiths" element={<Hadiths />} />
               <Route path="/Duas" element={<Duas />} />
               <Route path="/tajwid" element={<Tajwid />} />
-              {/* Добавь маршрут */}
               <Route path="/quran" element={<Quran />} />
             </Routes>
           </div>

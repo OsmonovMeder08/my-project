@@ -120,7 +120,7 @@ const surahs = [
 ];
 
 
-export default function Surahs() {
+ export default function Surahs() {
   const audioRef = useRef(null);
   const [currentSurah, setCurrentSurah] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -128,21 +128,60 @@ export default function Surahs() {
   const [duration, setDuration] = useState(0);
 
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      if (currentSurah) {
-        audioRef.current.load(); // перезагружаем аудио
-        if (isPlaying) audioRef.current.play();
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (currentSurah) {
+      audio.pause();
+      audio.load();
+      audio.currentTime = 0;
+      setProgress(0);
+      setDuration(0);
+
+      if (isPlaying) {
+        audio.play().catch((err) =>
+          console.warn("Автовоспроизведение заблокировано:", err)
+        );
       }
     }
-  }, [currentSurah, isPlaying]);
-
+  }, [currentSurah]);
 
   useEffect(() => {
-    if (audioRef.current) {
-      isPlaying ? audioRef.current.play() : audioRef.current.pause();
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (isPlaying) {
+      audio.play().catch((err) =>
+        console.warn("Ошибка воспроизведения:", err)
+      );
+    } else {
+      audio.pause();
     }
   }, [isPlaying]);
+
+  const handleTimeUpdate = () => {
+    const audio = audioRef.current;
+    if (audio) setProgress(audio.currentTime);
+  };
+
+  const handleLoadedMetadata = () => {
+    const audio = audioRef.current;
+    if (audio) setDuration(audio.duration);
+  };
+
+  const handleSeek = (e) => {
+    const audio = audioRef.current;
+    const newTime = parseFloat(e.target.value);
+    if (audio) {
+      audio.currentTime = newTime;
+      setProgress(newTime);
+    }
+  };
+
+  const handleEnded = () => {
+    setIsPlaying(false);
+    setProgress(0);
+  };
 
   const handleSelect = (surah) => {
     if (currentSurah?.id === surah.id) {
@@ -150,26 +189,7 @@ export default function Surahs() {
     } else {
       setCurrentSurah(surah);
       setIsPlaying(true);
-      setProgress(0);
     }
-  };
-
-  const handleTimeUpdate = () => {
-    setProgress(audioRef.current.currentTime);
-  };
-
-  const handleLoadedMetadata = () => {
-    setDuration(audioRef.current.duration);
-  };
-
-  const handleSeek = (e) => {
-    const newTime = parseFloat(e.target.value);
-    audioRef.current.currentTime = newTime;
-    setProgress(newTime);
-  };
-
-  const handleEnded = () => {
-    setIsPlaying(false);
   };
 
   const formatTime = (seconds) => {
@@ -180,8 +200,17 @@ export default function Surahs() {
   };
 
   return (
-    <div style={{ maxWidth: 600, margin: "40px auto", color: "#eee", backgroundColor: "#121212", padding: 20, borderRadius: 8 }}>
-      <h1 style={{ textAlign: "center" }}>📖 Quran Surahs - 📖 سور القرآن الكريم</h1>
+    <div
+      style={{
+        maxWidth: 600,
+        margin: "40px auto",
+        color: "#eee",
+        backgroundColor: "#121212",
+        padding: 20,
+        borderRadius: 8,
+      }}
+    >
+      <h1 style={{ textAlign: "center" }}>📖 Quran Surahs - سور القرآن</h1>
 
       {surahs.map((surah) => (
         <div
@@ -190,13 +219,16 @@ export default function Surahs() {
           style={{
             padding: 10,
             marginBottom: 10,
-            backgroundColor: currentSurah?.id === surah.id ? "#1db954" : "#222",
+            backgroundColor:
+              currentSurah?.id === surah.id ? "#1db954" : "#222",
             borderRadius: 6,
             cursor: "pointer",
           }}
         >
           <h3 style={{ margin: 0 }}>{surah.name}</h3>
-          <p style={{ margin: 0, fontSize: 13, color: "#ccc" }}>{surah.description}</p>
+          <p style={{ margin: 0, fontSize: 13, color: "#ccc" }}>
+            {surah.description}
+          </p>
 
           {currentSurah?.id === surah.id && (
             <div style={{ marginTop: 10 }}>
@@ -235,7 +267,14 @@ export default function Surahs() {
                 onChange={handleSeek}
                 style={{ width: "100%" }}
               />
-              <div style={{ fontSize: 13, display: "flex", justifyContent: "space-between", color: "#aaa" }}>
+              <div
+                style={{
+                  fontSize: 13,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  color: "#aaa",
+                }}
+              >
                 <span>{formatTime(progress)}</span>
                 <span>{formatTime(duration)}</span>
               </div>
@@ -246,3 +285,4 @@ export default function Surahs() {
     </div>
   );
 }
+
